@@ -13,7 +13,7 @@ to render these predictions into either UIView or NSView, depending on the platf
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'Chris Morgan' => 'cmorgan@abamaxa.com' }
   s.source           = { :git => 'https://github.com/abamaxa/coreml_ssd.git', :tag => s.version.to_s }
-
+ 
   s.ios.deployment_target = '11.0'
   s.osx.deployment_target = '10.13'
 
