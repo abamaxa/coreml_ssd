@@ -1,6 +1,6 @@
 # coreml_ssd
 
-##Introduction
+## Introduction
 
 This Objective-C library provides support for using SSD object detector models with CoreML framework. The library provides the required post-processing support to generate bounding boxes from the raw predictions. It also provides support to render these predictions into either UIView or NSView, depending on the platform.
 
@@ -12,11 +12,11 @@ and also contains Objective-C implementations hollance/CoreMLHelpers
 
 https://github.com/hollance/CoreMLHelpers
 
-##Installation
+## Installation
 
 The library can be installed by adding pod 'core_ssd' to your Podfile.
 
-##Usage
+## Usage
 
 Users of the library have to implement the SSDMobileNetDelegate protocol in order to receive prediction results. Furthermore, the library currently exposes C++ objects so must be called from an Objective-C++ module (i.e a .mm file).
 
@@ -58,7 +58,7 @@ or CIImage (on OSX only) :
 }
 ```
 
-##Tensorflow Tools
+## Tensorflow Tools
 
 CoreML does not support the post-processing steps, hence the need for this library.
 
@@ -80,6 +80,6 @@ The run the following command, passing the model's configuration file
 $ python ssd_anchor_array_generator.py pipeline.config
 ```
 
-##Licence
+## Licence
 
 This software is released under the MIT licence.
