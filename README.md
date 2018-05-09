@@ -8,7 +8,7 @@ This project builds on the work of vonholst/SSDMobileNet_CoreML
 
 https://github.com/vonholst/SSDMobileNet_CoreML
 
-and also contains Objective-C implementations hollance/CoreMLHelpers
+and also contains Objective-C implementations of hollance/CoreMLHelpers work
 
 https://github.com/hollance/CoreMLHelpers
 
@@ -32,6 +32,7 @@ Users of the library have to implement the SSDMobileNetDelegate protocol in orde
     self.detector = [[SSDMobileNet alloc]initWithModel:yourModel];
 }
 
+// The SSDMobileNetDelegate protocol
 - (void) visionRequestDidComplete:(SSDMobileNet*)model {
     const PredictionList &predictions = model.predictions;
     for (auto itr = predictions.begin();itr != predictions.end();++itr) {

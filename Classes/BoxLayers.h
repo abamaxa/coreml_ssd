@@ -25,13 +25,15 @@
 #import "Prediction.h"
 
 @interface BoxLayers : NSObject {
-    
+
 }
 
 - (id)initWithView:(VIEW *)view;
 - (void) clear;
-- (void) add:(const Prediction *)prediction;
 - (void) draw;
+#ifdef __cplusplus
+- (void) add:(const Prediction *)prediction;
+#endif
 
 @end
 

@@ -14,17 +14,17 @@ class Prediction {
 public:
     Prediction();
     Prediction(uint box_id, uint class_id, float score, double ty, double tx, double th, double tw);
-    
+
     CGRect get_scaled_box(CGSize destination) const;
     const char* get_class() const;
     float get_score() const;
     double get_width() const;
     double get_height() const;
-    
+
     std::string to_string() const;
-    
+
     bool operator < (const Prediction& test) const;
-    
+
     bool IOUGreaterThanThreshold(const Prediction& test, float iou_threshold) const;
 private:
     float ymin;
