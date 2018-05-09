@@ -8,8 +8,9 @@
 
 #ifdef __cplusplus
 
-//#import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
+#import <CoreML/CoreML.h>
+#import <Vision/Vision.h>
 
 #import <vector>
 #import <cmath>
@@ -35,6 +36,7 @@
 @property (nonatomic) int limit;
 @property (nonatomic) PredictionList predictions;
 
+- (id) initWithModel:(MLModel *)model;
 - (void) predictWithSampleBuffer:(CMSampleBufferRef) sampleBuffer;
 - (void) predictWithCIImage:(CIImage*) image;
 

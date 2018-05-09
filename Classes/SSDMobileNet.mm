@@ -2,17 +2,13 @@
 //  Copyright © 2018 Chris Morgan. All rights reserved.
 
 #import "SSDMobileNet.h"
-#import <CoreML/CoreML.h>
-#import <Vision/Vision.h>
 #include <iterator>
-#import "ssd_mobilenet_v2_multi_1000_sq_aug_fp16.h"
 
 @interface SSDMobileNet () {
 }
 
 @property (nonatomic, strong) VNCoreMLModel * vnCoreModel;
 @property (nonatomic, strong) VNCoreMLRequest *vnCoreMlRequest;
-@property (nonatomic, strong) ssd_mobilenet_v2_multi_1000_sq_aug_fp16* model;
 @property (nonatomic, strong) NSDate * detection_start_time;
 @property (nonatomic, strong) NSDate * processing_start_time;
 @property (nonatomic, weak) MLMultiArray* classes;
@@ -24,27 +20,26 @@
 @implementation SSDMobileNet {
 }
 
-- (id) init {
+- (id) initWithModel:(MLModel *)model {
     self = [super init];
     if (self) {
-        [self setupModel];
         self.detection_threshold = 0.3;
         self.iou_threshold = 0.3;
         self.limit = 10;
         self.num_anchors = Anchor::get_number_of_anchors();
+        [self setupModel:model];
     }
     return self;
 }
 
-- (void) setupModel {
-    self.model = [[ssd_mobilenet_v2_multi_1000_sq_aug_fp16 alloc] init];
-    self.vnCoreModel = [VNCoreMLModel modelForMLModel:self.model.model error:nil];
+-(void) setupModel:(MLModel *)model {
+    self.vnCoreModel = [VNCoreMLModel modelForMLModel:model error:nil];
     self.vnCoreMlRequest = [[VNCoreMLRequest alloc] initWithModel:self.vnCoreModel
         completionHandler:^(VNRequest * _Nonnull request, NSError * _Nullable error)
         {
             [self visionRequestDidComplete:request error:error];
         }];
-    
+
     //self.vnCoreMlRequest.imageCropAndScaleOption = VNImageCropAndScaleOptionCenterCrop;
     self.vnCoreMlRequest.imageCropAndScaleOption = VNImageCropAndScaleOptionScaleFill;
 }
@@ -52,7 +47,7 @@
 - (void) predictWithSampleBuffer:(CMSampleBufferRef) sampleBuffer {
     self.detection_start_time = [NSDate date];
     NSDictionary *options_dict = [[NSDictionary alloc] init];
-    
+
     CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
     VNImageRequestHandler *vnImageRequestHandler = [[VNImageRequestHandler alloc]
                                                     initWithCVPixelBuffer:pixelBuffer
@@ -72,7 +67,7 @@
 -(void) performRequest:(VNImageRequestHandler *) vnImageRequestHandler {
     NSError *error = nil;
     [vnImageRequestHandler performRequests:@[self.vnCoreMlRequest] error:&error];
-    
+
     if (error) {
         NSLog(@"%@",error.localizedDescription);
     }
@@ -80,22 +75,22 @@
 
 -(void) processResults:(NSArray*) results {
     self.processing_start_time = [NSDate date];
-    
+
     _predictions.clear();
     if (!results)
         return;
 
     VNCoreMLFeatureValueObservation *class_results = (VNCoreMLFeatureValueObservation *)results[0];
     VNCoreMLFeatureValueObservation *box_results = (VNCoreMLFeatureValueObservation *)results[1];
-    
+
     self.classes = class_results.featureValue.multiArrayValue;
     self.boxes = box_results.featureValue.multiArrayValue;
-    
+
     [self calculateBoundingBoxes];
     //NSLog(@"Found %lu possible classes before supression", _predictions.size());
     [self DoNonMaxSuppressionOp];
     //NSLog(@"Found %lu possible classes after supression", _predictions.size());
-    
+
     self.classes = nil;
     self.boxes = nil;
 }
@@ -103,14 +98,14 @@
 -(void) calculateBoundingBoxes {
     float threshold_score = [self get_log_threshold];
     uint num_classes = [self get_number_classes];
-    
+
     // The first class, 0, is the background class, so skip that.
     for (uint class_id = 1; class_id < num_classes;class_id++) {
         for (uint box_id = 0;box_id < self.num_anchors;box_id++) {
             float score = [self get_score:class_id box_id:box_id];
             if (score < threshold_score)
                 continue;
-            
+
             _predictions.push_back([self get_prediction:class_id box_id:box_id]);
         }
     }
@@ -153,15 +148,15 @@
     long num_boxes = _predictions.size();
     if (!num_boxes)
         return;
-    
+
     float iou_threshold = self.iou_threshold;
     const int output_size = self.limit;
-    
+
     std::sort(_predictions.begin(), _predictions.end(),
       [](const Prediction & a, const Prediction & b) -> bool {
           return a.get_score() > b.get_score();
       });
-    
+
     std::vector<float> scores_data(num_boxes);
     auto source = _predictions.begin();
     auto destination = scores_data.begin();
@@ -171,7 +166,7 @@
 
     std::vector<int> sorted_indices;
     DecreasingArgSort(scores_data, &sorted_indices);
-    
+
     PredictionList selected;
     std::vector<int> selected_indices(output_size, 0);
     int num_selected = 0;
@@ -179,7 +174,7 @@
         if (selected.size() >= output_size) break;
         bool should_select = true;
         const Prediction& test1 = _predictions[sorted_indices[i]];
-        
+
         // Overlapping boxes are likely to have similar scores,
         // therefore we iterate through the selected boxes backwards.
         for (int j = num_selected - 1; j >= 0; --j) {
@@ -209,9 +204,9 @@ static inline void DecreasingArgSort(const std::vector<float>& values,
 }
 
 -(void) visionRequestDidComplete:(VNRequest *) request error:(NSError *)error {
-    
+
     [self processResults:request.results];
-    
+
     dispatch_async(dispatch_get_main_queue(), ^{
         [self notifyMainThread];
     });
@@ -223,7 +218,7 @@ static inline void DecreasingArgSort(const std::vector<float>& values,
         if ([strongDelegate respondsToSelector:@selector(visionRequestDidComplete:)])
             [strongDelegate visionRequestDidComplete:self];
     }
-    
+
     NSTimeInterval detection = [[NSDate date] timeIntervalSinceDate:self.detection_start_time];
     NSTimeInterval processing = [[NSDate date] timeIntervalSinceDate:self.processing_start_time];
     NSLog(@"Completed detection in %.3f seconds, processing in %.3f seconds", detection, processing);
