@@ -30,6 +30,7 @@ Users of the library have to implement the SSDMobileNetDelegate protocol in orde
 
 - (void) loadModel:(MLModel*) yourModel {
     self.detector = [[SSDMobileNet alloc]initWithModel:yourModel];
+    self.detector.delegate = self;
 }
 
 // The SSDMobileNetDelegate protocol

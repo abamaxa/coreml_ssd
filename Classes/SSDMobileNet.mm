@@ -64,6 +64,15 @@
     [self performRequest:vnImageRequestHandler];
 }
 
+- (void) predictWithData:(NSData*) imageData {
+    self.detection_start_time = [NSDate date];
+    NSDictionary *options_dict = [[NSDictionary alloc] init];
+    VNImageRequestHandler *vnImageRequestHandler = [[VNImageRequestHandler alloc]
+                                                    initWithData:imageData
+                                                    options:options_dict];
+    [self performRequest:vnImageRequestHandler];
+}
+
 -(void) performRequest:(VNImageRequestHandler *) vnImageRequestHandler {
     NSError *error = nil;
     [vnImageRequestHandler performRequests:@[self.vnCoreMlRequest] error:&error];
@@ -71,6 +80,11 @@
     if (error) {
         NSLog(@"%@",error.localizedDescription);
     }
+}
+
+-(void) visionRequestDidComplete:(VNRequest *) request error:(NSError *)error {
+    [self processResults:request.results];
+    [self notifyMainThread];
 }
 
 -(void) processResults:(NSArray*) results {
@@ -201,15 +215,6 @@ static inline void DecreasingArgSort(const std::vector<float>& values,
     for (int i = 0; i < values.size(); ++i) (*indices)[i] = i;
     std::sort(indices->begin(), indices->end(),
               [&values](const int i, const int j) { return values[i] > values[j]; });
-}
-
--(void) visionRequestDidComplete:(VNRequest *) request error:(NSError *)error {
-
-    [self processResults:request.results];
-
-    dispatch_async(dispatch_get_main_queue(), ^{
-        [self notifyMainThread];
-    });
 }
 
 -(void) notifyMainThread {

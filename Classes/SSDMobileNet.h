@@ -39,6 +39,7 @@
 - (id) initWithModel:(MLModel *)model;
 - (void) predictWithSampleBuffer:(CMSampleBufferRef) sampleBuffer;
 - (void) predictWithCIImage:(CIImage*) image;
+- (void) predictWithData:(NSData*) imageData;
 
 @end
 
