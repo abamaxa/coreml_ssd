@@ -18,7 +18,6 @@
 @implementation BoxLayers {
 }
 
-
 - (id)initWithView:(VIEW *)view {
     self.view = view;
 
@@ -26,7 +25,8 @@
 
     self.shape_layer = [[CAShapeLayer alloc] init];
     self.shape_layer.fillColor = [[COLOR clearColor] CGColor];
-    self.shape_layer.lineWidth = 4;
+    self.shape_layer.strokeColor = [[COLOR redColor] CGColor];
+    self.shape_layer.lineWidth = 1;
     self.shape_layer.zPosition = 1;
 
     self.text_layer = [[CATextLayer alloc] init];
@@ -46,20 +46,31 @@
     self.path = nil;
 }
 
-- (void) add:(const Prediction *)prediction {
+- (void) add:(CGRect)frame {
     if (self.path == nil) {
         self.path = [[BEZIERPATH alloc] init];
     }
 
-    CGSize destination = self.view.frame.size;
-    CGRect frame = prediction->get_scaled_box(destination);
     [self append_to_path:frame];
 }
 
-- (void) draw {
+- (void) add_bezier_path:(BEZIERPATH*)new_path {
+    if (self.path == nil) {
+        self.path = [[BEZIERPATH alloc] init];
+    }
+    
+    [self append_bezier_path:new_path];
+}
+
+- (void) draw:(CGColorRef) color {
     [self add_path_to_shape_layer];
-    self.shape_layer.strokeColor = [[COLOR redColor] CGColor];
+    self.shape_layer.strokeColor = color;
     self.shape_layer.hidden = NO;
+}
+
+- (void) show:(BOOL)visible {
+    self.shape_layer.hidden = !visible;
+    self.text_layer.hidden = !visible;
 }
 
 -(void) ensure_view_has_layer {
@@ -72,10 +83,15 @@
 }
 
 -(void) append_to_path:(CGRect)frame {
+    BEZIERPATH* new_path = [BEZIERPATH bezierPathWithRect:frame];
+    [self append_bezier_path:new_path];
+}
+
+-(void) append_bezier_path:(BEZIERPATH*)new_path {
 #if TARGET_OS_IPHONE
-    [self.path appendPath:[BEZIERPATH bezierPathWithRect:frame]];
+    [self.path appendPath:new_path];
 #else
-    [self.path appendBezierPath:[BEZIERPATH bezierPathWithRect:frame]];
+    [self.path appendBezierPath:new_path];
 #endif
 }
 

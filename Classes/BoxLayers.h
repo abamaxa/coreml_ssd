@@ -22,18 +22,15 @@
 #define COLOR NSColor
 #endif
 
-#import "Prediction.h"
-
 @interface BoxLayers : NSObject {
-
 }
 
 - (id)initWithView:(VIEW *)view;
 - (void) clear;
-- (void) draw;
-#ifdef __cplusplus
-- (void) add:(const Prediction *)prediction;
-#endif
+- (void) show:(BOOL)visible;
+- (void) draw:(CGColorRef)color;
+- (void) add:(CGRect)frame;
+- (void) add_bezier_path:(BEZIERPATH*)new_path;
 
 @end
 

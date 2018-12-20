@@ -14,11 +14,19 @@ https://github.com/hollance/CoreMLHelpers
 
 ## Installation
 
-The library can be installed by adding pod 'core_ssd' to your Podfile.
+The library can be installed by adding the following to your Podfile:
+
+```
+  use_frameworks!
+
+  # Pods for SwiftStory
+  pod "coreml_ssd", :git => 'https://github.com/abamaxa/coreml_ssd.git'
+
+```
 
 ## Usage
 
-Users of the library have to implement the SSDMobileNetDelegate protocol in order to receive prediction results. Furthermore, the library currently exposes C++ objects so must be called from an Objective-C++ module (i.e a .mm file).
+Users of the library have to implement the SSDMobileNetDelegate protocol in order to receive prediction results.
 
 ```Objective-c
 #import "SSDMobileNet.h"
@@ -59,6 +67,11 @@ or CIImage (on OSX only) :
     [self.detector predictWithCIImage:self.image];
 }
 ```
+
+## Swift
+
+This library now supports Swift 4.2.
+
 
 ## Tensorflow Tools
 
