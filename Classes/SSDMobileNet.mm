@@ -30,8 +30,8 @@
 - (id) initWithModel:(MLModel *)model {
     self = [super init];
     if (self) {
-        self.detection_threshold = 0.3;
-        self.iou_threshold = 0.3;
+        self.detection_threshold = 0.5;
+        self.iou_threshold = 0.5;
         self.limit = 10;
         self.num_anchors = Anchor::get_number_of_anchors();
         self.predictions = [[NSMutableArray alloc] init];
@@ -55,11 +55,17 @@
 
 - (void) predictWithSampleBuffer:(CMSampleBufferRef) sampleBuffer {
     self.detection_start_time = [NSDate date];
-    NSDictionary *options_dict = [[NSDictionary alloc] init];
+    NSMutableDictionary<VNImageOption, id> *options_dict = [NSMutableDictionary dictionary];
+    
+    CFTypeRef cameraIntrinsicData = CMGetAttachment(sampleBuffer, kCMSampleBufferAttachmentKey_CameraIntrinsicMatrix, nil);
+    if (cameraIntrinsicData != nil) {
+        [options_dict setObject:(__bridge id)cameraIntrinsicData forKey:VNImageOptionCameraIntrinsics];
+    }
     
     CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
     VNImageRequestHandler *vnImageRequestHandler = [[VNImageRequestHandler alloc]
                                                     initWithCVPixelBuffer:pixelBuffer
+                                                    orientation:kCGImagePropertyOrientationRight
                                                     options:options_dict];
     [self performRequest:vnImageRequestHandler];
 }
@@ -69,6 +75,15 @@
     NSDictionary *options_dict = [[NSDictionary alloc] init];
     VNImageRequestHandler *vnImageRequestHandler = [[VNImageRequestHandler alloc]
                                                     initWithCIImage:image
+                                                    options:options_dict];
+    [self performRequest:vnImageRequestHandler];
+}
+
+- (void) predictWithCGImage:(CGImageRef) image {
+    self.detection_start_time = [NSDate date];
+    NSDictionary *options_dict = [[NSDictionary alloc] init];
+    VNImageRequestHandler *vnImageRequestHandler = [[VNImageRequestHandler alloc]
+                                                    initWithCGImage:image
                                                     options:options_dict];
     [self performRequest:vnImageRequestHandler];
 }
@@ -98,11 +113,24 @@
     if (!results)
         return;
 
-    VNCoreMLFeatureValueObservation *class_results = (VNCoreMLFeatureValueObservation *)results[0];
-    VNCoreMLFeatureValueObservation *box_results = (VNCoreMLFeatureValueObservation *)results[1];
+    VNCoreMLFeatureValueObservation *first_results = (VNCoreMLFeatureValueObservation *)results[0];
+    VNCoreMLFeatureValueObservation *second_results = (VNCoreMLFeatureValueObservation *)results[1];
     
-    self.classes = class_results.featureValue.multiArrayValue;
-    self.boxes = box_results.featureValue.multiArrayValue;
+    // The order these results appear in depends on how the model was
+    // converted, only by checking the number of dimensions can we
+    // be sure which array is which
+    if (first_results.featureValue.multiArrayValue.shape.count == 5) {
+        self.classes = first_results.featureValue.multiArrayValue;
+        self.boxes = second_results.featureValue.multiArrayValue;
+    }
+    else if (first_results.featureValue.multiArrayValue.shape.count == 3) {
+        self.classes = second_results.featureValue.multiArrayValue;
+        self.boxes = first_results.featureValue.multiArrayValue;
+    }
+    else {
+        NSLog(@"Predictions returned in an unexpected shape");
+        return;
+    }
     
     [self calculateBoundingBoxes];
     //NSLog(@"Found %lu possible classes before supression", _predictions_old.size());
@@ -245,7 +273,7 @@ static inline void DecreasingArgSort(const std::vector<float>& values,
     
     NSTimeInterval detection = [[NSDate date] timeIntervalSinceDate:self.detection_start_time];
     NSTimeInterval processing = [[NSDate date] timeIntervalSinceDate:self.processing_start_time];
-    NSLog(@"Completed detection in %.3f seconds, processing in %.3f seconds", detection, processing);
+    //NSLog(@"Completed detection in %.3f seconds, processing in %.3f seconds", detection, processing);
 }
 
 @end

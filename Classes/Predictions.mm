@@ -90,6 +90,10 @@
     return self.ymax - self.ymin;
 }
 
+- (int) get_class_id {
+    return self.class_id;
+}
+
 - (BOOL) IOUGreaterThanThreshold:(Predictions*) test  iou_threshold:(float) iou_threshold {
     double areaA = [self get_height] * [self get_width];
     double areaB = [test get_height] * [test get_width];

@@ -8,7 +8,7 @@
 
 #import <AVFoundation/AVFoundation.h>
 #import <CoreML/CoreML.h>
- 
+
 @class SSDMobileNet;
 
 @protocol SSDMobileNetDelegate <NSObject>
@@ -22,6 +22,7 @@
 - (void) predictWithSampleBuffer:(CMSampleBufferRef) sampleBuffer;
 - (void) predictWithCIImage:(CIImage*) image;
 - (void) predictWithData:(NSData*) imageData;
+- (void) predictWithCGImage:(CGImageRef) image;
 
 @property (nonatomic, weak) id<SSDMobileNetDelegate> delegate;
 @property (nonatomic) uint numClasses;

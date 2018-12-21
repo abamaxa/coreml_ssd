@@ -18,6 +18,7 @@
 - (float) get_score;
 - (double) get_width;
 - (double) get_height;
+- (int) get_class_id;
 - (BOOL) IOUGreaterThanThreshold:(Predictions*) test  iou_threshold:(float) iou_threshold;
 
 @property (nonatomic) float ymin;

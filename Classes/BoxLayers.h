@@ -31,6 +31,7 @@
 - (void) draw:(CGColorRef)color;
 - (void) add:(CGRect)frame;
 - (void) add_bezier_path:(BEZIERPATH*)new_path;
+- (void) addWithLabel:(CGRect)frame label:(NSString*)label;
 
 @end
 

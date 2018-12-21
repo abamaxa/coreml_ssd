@@ -9,11 +9,13 @@
 }
 
 @property (nonatomic, strong) BEZIERPATH* path;
-@property (nonatomic, strong) CATextLayer *text_layer;
 @property (nonatomic, strong) CAShapeLayer *shape_layer;
 @property (nonatomic, assign) VIEW* view;
-
+@property (nonatomic, strong) NSMutableArray *text;
+@property (nonatomic) int currentTextLayer;
 @end
+
+#define MAX_TEXT_LABEL 10
 
 @implementation BoxLayers {
 }
@@ -22,6 +24,9 @@
     self.view = view;
 
     [self ensure_view_has_layer];
+    
+    self.currentTextLayer = 0;
+    self.text = [[NSMutableArray alloc] init];
 
     self.shape_layer = [[CAShapeLayer alloc] init];
     self.shape_layer.fillColor = [[COLOR clearColor] CGColor];
@@ -29,21 +34,29 @@
     self.shape_layer.lineWidth = 1;
     self.shape_layer.zPosition = 1;
 
-    self.text_layer = [[CATextLayer alloc] init];
-    self.text_layer.fontSize = 16;
-    self.text_layer.alignmentMode = kCAAlignmentCenter;
-    self.text_layer.zPosition = 1;
-
     [self.view.layer addSublayer:self.shape_layer];
-    [self.view.layer addSublayer:self.text_layer];
+    
+    for (int i = 0;i < MAX_TEXT_LABEL;i++) {
+        CATextLayer *text_layer = text_layer = [[CATextLayer alloc] init];
+        text_layer.fontSize = 14;
+        text_layer.font = (__bridge CFTypeRef _Nullable)([UIFont systemFontOfSize:text_layer.fontSize]);
+        text_layer.alignmentMode = kCAAlignmentCenter;
+        text_layer.zPosition = 1;
+        text_layer.hidden = YES;
+        text_layer.contentsScale = UIScreen.mainScreen.scale;
+        
+        [self.view.layer addSublayer:text_layer];
+        [self.text addObject:text_layer];
+    }
 
     return self;
 }
 
 - (void) clear {
-    self.shape_layer.hidden = YES;
     self.shape_layer.path = nil;
     self.path = nil;
+    [self show:NO];
+    self.currentTextLayer = 0;
 }
 
 - (void) add:(CGRect)frame {
@@ -53,6 +66,23 @@
 
     [self append_to_path:frame];
 }
+
+- (void) addWithLabel:(CGRect)frame label:(NSString*)label {
+    if (self.path == nil) {
+        self.path = [[BEZIERPATH alloc] init];
+    }
+    
+    [self append_to_path:frame];
+    
+    if (self.currentTextLayer < self.text.count) {
+        CATextLayer* text_layer = [self.text objectAtIndex:self.currentTextLayer];
+        self.currentTextLayer++;
+    
+        text_layer.string = label;
+        text_layer.frame = frame;
+    }
+}
+
 
 - (void) add_bezier_path:(BEZIERPATH*)new_path {
     if (self.path == nil) {
@@ -66,11 +96,19 @@
     [self add_path_to_shape_layer];
     self.shape_layer.strokeColor = color;
     self.shape_layer.hidden = NO;
+
+    for (CATextLayer* layer in self.text) {
+        layer.foregroundColor = color;
+        layer.hidden = NO;
+    }
 }
 
 - (void) show:(BOOL)visible {
     self.shape_layer.hidden = !visible;
-    self.text_layer.hidden = !visible;
+    for (CATextLayer* layer in self.text) {
+        layer.hidden = !visible;
+        layer.string = @"";
+    }
 }
 
 -(void) ensure_view_has_layer {
