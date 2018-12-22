@@ -271,8 +271,8 @@ static inline void DecreasingArgSort(const std::vector<float>& values,
             [strongDelegate visionRequestDidComplete:self];
     }
     
-    NSTimeInterval detection = [[NSDate date] timeIntervalSinceDate:self.detection_start_time];
-    NSTimeInterval processing = [[NSDate date] timeIntervalSinceDate:self.processing_start_time];
+    //NSTimeInterval detection = [[NSDate date] timeIntervalSinceDate:self.detection_start_time];
+    //NSTimeInterval processing = [[NSDate date] timeIntervalSinceDate:self.processing_start_time];
     //NSLog(@"Completed detection in %.3f seconds, processing in %.3f seconds", detection, processing);
 }
 

@@ -68,6 +68,9 @@
 }
 
 - (void) addWithLabel:(CGRect)frame label:(NSString*)label {
+    [CATransaction begin];
+    [CATransaction setDisableActions:YES];
+    
     if (self.path == nil) {
         self.path = [[BEZIERPATH alloc] init];
     }
@@ -81,6 +84,8 @@
         text_layer.string = label;
         text_layer.frame = frame;
     }
+    
+    [CATransaction commit];
 }
 
 

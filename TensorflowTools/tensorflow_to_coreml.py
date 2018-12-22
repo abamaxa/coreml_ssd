@@ -15,20 +15,22 @@ class Convertor :
         self.input_name_shape_dict = {"Preprocessor/sub:0":[1,300,300,3]}
         self.original_gdef = None
         self.gdef = None
-        self.frozen_model_file = "stripped_" + os.path.basename(self.tf_model_path)
+        self.frozen_model_file = "output/stripped_" + os.path.basename(self.tf_model_path)
+        self.mlmodel_file = "output/" + os.path.splitext(os.path.basename(self.tf_model_path))[0] + ".mlmodel"
         self.coreml_model = None
+        if not os.path.exists("output") :
+            os.makedirs("output")
 
     def write(self) :
         try :
-            output_path = os.path.splitext(self.tf_model_path)[0] + ".mlmodel"
-            with gfile.GFile(self.frozen_model_file, "wb") as f:
-                f.write(self.gdef.SerializeToString())
-            
+            self.save_stripped_graph()
+                        
             self.coreml_model  = tfcoreml.convert(tf_model_path = self.frozen_model_file,
-                mlmodel_path = output_path,
+                mlmodel_path = self.mlmodel_file,
                 output_feature_names = self.output_feature_names,
                 input_name_shape_dict = self.input_name_shape_dict,
-                image_input_names="Preprocessor/sub:0",
+                image_input_names = self._get_input_image_name(),
+                is_bgr=False,
                 image_scale=2./255.,
                 red_bias=-1.0,
                 green_bias=-1.0,
@@ -48,13 +50,22 @@ class Convertor :
             tf.import_graph_def(self.original_gdef, name='')
 
     def strip_subgraphs(self) :
-        input_node_names = ['Preprocessor/sub']
-        output_node_names = ['concat', 'concat_1']
+        input_node_names = self._get_bare_input_names()
+        output_node_names = self._get_bare_output_names()
         self.gdef = strip_unused_lib.strip_unused(
             input_graph_def = self.original_gdef,
-            input_node_names = input_node_names,
-            output_node_names = output_node_names,
-            placeholder_type_enum = dtypes.float32.as_datatype_enum)
+                input_node_names = input_node_names,
+                output_node_names = output_node_names,
+                placeholder_type_enum = dtypes.float32.as_datatype_enum)
+
+    def _get_bare_input_names(self) :
+        return [s.split(':')[0] for s in self.input_name_shape_dict.keys()]    
+
+    def _get_bare_output_names(self) :
+        return [s.split(':')[0] for s in self.output_feature_names]
+    
+    def _get_input_image_name(self) :
+        return list(self.input_name_shape_dict.keys())[0]
 
     def save_stripped_graph(self) :
         # Save the feature extractor to an output file
@@ -75,5 +86,3 @@ if __name__ == "__main__" :
             
     args = parser.parse_args()    
     main(args)
-
-

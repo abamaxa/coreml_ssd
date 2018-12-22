@@ -72,12 +72,83 @@ or CIImage (on OSX only) :
 
 This library now supports Swift 4.2.
 
+```Swift
+import CoreML
+import coreml_ssd
 
-## Tensorflow Tools
+class Detector : NSObject, SSDMobileNetDelegate {
+    private var objectDetector: SSDMobileNet?
+    private var queue = DispatchQueue(label: "com.abamaxa.swift_demo")    
+    private var resultsLayer: BoxLayers?  
+    private var currentView: UIView?
+     
+    override init() {
+        super.init()
+        self.objectDetector = SSDMobileNet(model:ssd_mobilenet_v2_coco().model)
+        self.objectDetector?.delegate = self
+    }
+        
+    func setView(view: UIView, resultsLayer: BoxLayers) {
+        self.currentView = view
+        self.resultsLayer = resultsLayer
+    }
+    
+    func predict(sampleBuffer:CMSampleBuffer) {
+        self.queue.async(execute: {
+             self.objectDetector?.predict(with: sampleBuffer)
+        })
+    }
+        
+    func visionRequestDidComplete(_ model: SSDMobileNet!) {
+        DispatchQueue.main.async {
+            self.displayResults(model)
+        }
+    }
+    
+    func displayResults(_ model: SSDMobileNet) {
+        guard let view = self.currentView else {
+            print("The current view is not set, call setView() first")
+            return
+        }
+        
+        self.resultsLayer?.clear()
+        
+        for obj in model.predictions {
+            let prediction = obj as! Predictions
+            let rect = prediction.get_scaled_box(view.bounds.size)
+            // Your method for getting class names
+            let label = get_class_name(prediction.get_class_id())
+            self.resultsLayer?.add(withLabel: rect, label: label)
+        }
+        
+        self.resultsLayer?.draw(UIColor.red.cgColor)
+    }
+}
+
+
+```
+
+## Converting Tensorflow Models
+
+CoreML cannot use models saved by Tensorflow. So, they have to be converted to a form that CoreML does support. One way to do this is to use the provided python script: TensorflowTools/tensorflow_to_coreml.py. To use, install the scripts dependancies by using pip:
+
+```shell
+pip install tensorflow tfcoreml
+
+```
+
+and then just pass it the path to the tensorflow model file to convert:
+
+```shell
+python tensorflow_to_coreml.py input/frozen_inference_graph.pb
+
+```
+
+The converted model will be saved to a subdirectory called "output", created by the script in the directory it is run from.
+
+## Recreating Anchors
 
 CoreML does not support the post-processing steps, hence the need for this library.
-
-These steps have been described in more detail by
 
 One of the tasks the library must perform is to map predictions to anchor boxes. These boxes are calculated from the Tensorflow object detection config file. Rather than shipping this file with your model and parsing it at run time, the anchor boxes are calculated ahead of time and written to a header file anchors.h. This file is specific to the model.
 
